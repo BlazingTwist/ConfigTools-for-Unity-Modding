@@ -1,0 +1,13 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/Highlighting/HighlightingSourceSnapshotLocation/@EntryValue">C:\Users\Admin\AppData\Local\JetBrains\Rider2021.2\resharper-host\temp\Rider\vAny\CoverageData\_BlazingTwistConfigTools.-2018990839\Snapshot\snapshot.utdcvr</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a0d7b959_002D0500_002D4190_002D990d_002D252c5f9e26fa/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Minimize_Works" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::F7A81664-59C8-4405-A560-85CBC2E1FD03::.NETFramework,Version=v4.6::BlazingTwistConfigToolsTest.config.deserialization.DeserializerUtils_Test&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::F7A81664-59C8-4405-A560-85CBC2E1FD03::.NETFramework,Version=v4.6::BlazingTwistConfigToolsTest.config.deserialization.LineReader_Test&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::F7A81664-59C8-4405-A560-85CBC2E1FD03::.NETFramework,Version=v4.6::BlazingTwistConfigToolsTest.BTConfigTools_Test.Test_Serialization&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::F7A81664-59C8-4405-A560-85CBC2E1FD03::.NETFramework,Version=v4.6::BlazingTwistConfigToolsTest.config.serialization.ConfigSerializer_Test.Test_SerializeNullValues&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::F7A81664-59C8-4405-A560-85CBC2E1FD03::.NETFramework,Version=v4.6::BlazingTwistConfigToolsTest.config.serialization.ConfigSerializer_Test&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::F7A81664-59C8-4405-A560-85CBC2E1FD03::.NETFramework,Version=v4.6::BlazingTwistConfigToolsTest.config.deserialization.ConfigDeserializer_Test.Test_Deserialize_NullDeserializeToDefault&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	</wpf:ResourceDictionary>

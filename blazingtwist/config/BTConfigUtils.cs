@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using BlazingTwistConfigTools.blazingtwist.config.deserialization;
+using BlazingTwistConfigTools.blazingtwist.config.serialization;
 using JetBrains.Annotations;
 using UnityEngine;
 
@@ -13,23 +17,36 @@ namespace BlazingTwistConfigTools.blazingtwist.config {
 		/// </summary>
 		/// <param name="pathToFile">absolute path to the config file. '/' will be replaced with the DirectorySeparatorChar</param>
 		/// <param name="instance">optional - instance of the existing config</param>
+		/// <param name="verifyAllFieldsSet">if enabled, verifies that all Fields of TConfigType are set by the config</param>
 		/// <typeparam name="TConfigType">type of the config to load</typeparam>
 		/// <returns>instance of the loaded config</returns>
-		public static TConfigType LoadConfigFile<TConfigType>(string pathToFile, [CanBeNull] TConfigType instance) {
+		public static TConfigType LoadConfigFile<TConfigType>(string pathToFile, [CanBeNull] TConfigType instance, bool verifyAllFieldsSet) {
 			pathToFile = pathToFile.Replace('/', Path.DirectorySeparatorChar);
 			if (!File.Exists(pathToFile)) {
-				Debug.LogError("Config file not found at path: '" + pathToFile + "'");
-				return default;
+				if (instance == null) {
+					instance = (TConfigType)Activator.CreateInstance(typeof(TConfigType));
+				}
+				IEnumerable<string> lines = new ConfigSerializer().Serialize(instance);
+
+				using (StreamWriter writer = new StreamWriter(pathToFile, false)) {
+					foreach (string line in lines) {
+						writer.WriteLine(line);
+					}
+				}
+				return instance;
 			}
 
 			try {
 				using (StreamReader reader = File.OpenText(pathToFile)) {
-					if (instance == null) {
-						return BTConfigTools.LoadConfig<TConfigType>(reader);
+					List<string> lines = new List<string>();
+					{
+						string line;
+						while ((line = reader.ReadLine()) != null) {
+							lines.Add(line);
+						}
 					}
-
-					BTConfigTools.LoadConfig(reader, instance);
-					return instance;
+					ConfigDeserializer<TConfigType> deserializer = new ConfigDeserializer<TConfigType>(DeserializerUtils.Tokenize(lines).ToList(), verifyAllFieldsSet);
+					return instance == null ? deserializer.Deserialize() : deserializer.Deserialize(instance);
 				}
 			} catch (Exception e) {
 				Debug.LogError("Failed to load config at path: '" + pathToFile + "', caught exception: " + e);
