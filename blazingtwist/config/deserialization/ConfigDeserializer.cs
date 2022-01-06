@@ -24,9 +24,9 @@ namespace BlazingTwistConfigTools.config.deserialization {
 			}
 		}
 
-		private readonly bool verifyAllKeysSet;
 		private readonly Dictionary<Type, Dictionary<string, FieldInfo>> typeCache;
 		private readonly TokenNode rootNode;
+		private readonly ConfigOptions options;
 
 		private static TokenNode BuildNode(IReadOnlyList<ConfigNode> nodes, int nodeIndex, ConfigNode node) {
 			TokenNode currentNode = new TokenNode(node);
@@ -65,10 +65,10 @@ namespace BlazingTwistConfigTools.config.deserialization {
 			return rootNodes;
 		}
 
-		public ConfigDeserializer(IReadOnlyList<ConfigNode> nodes, bool verifyAllKeysSet) {
-			this.verifyAllKeysSet = verifyAllKeysSet;
+		public ConfigDeserializer(IReadOnlyList<ConfigNode> nodes, ConfigOptions options) {
 			typeCache = new Dictionary<Type, Dictionary<string, FieldInfo>>();
 			rootNode = new TokenNode { listValues = GatherRootNodes(nodes) };
+			this.options = options;
 		}
 
 		private Dictionary<string, FieldInfo> GetTypeInfo(Type type, EDataType eDataType) {
@@ -80,17 +80,17 @@ namespace BlazingTwistConfigTools.config.deserialization {
 			}
 			
 			Dictionary<string, FieldInfo> result = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public)
-					.Where(field => Attribute.IsDefined(field, typeof(ConfigValueAttribute)))
+					.Where(field => options.IsFieldRelevant(type, field))
 					.ToDictionary(field => {
-						string name = field.GetCustomAttribute<ConfigValueAttribute>().name ?? field.Name;
-						Match match = Regex.Match(name, "^<(.+)>k__BackingField"); // TODO implement this
-						return field.GetCustomAttribute<ConfigValueAttribute>().name ?? field.Name;
+						string name = field.GetCustomAttribute<ConfigValueAttribute>()?.name ?? field.Name;
+						Match match = Regex.Match(name, "^<(.+)>k__BackingField"); // TODO implement auto-property deserialize
+						return name;
 					}, field => field);
 			typeCache[type] = result;
 			return result;
 		}
 
-		private object DeserializeSimpleValue(TokenNode node, Type type) {
+		private static object DeserializeSimpleValue(TokenNode node, Type type) {
 			//Debug.Assert(!eDataType.IsSingleValueType());
 			if (node.simpleValue == null) {
 				return type.IsValueType ? Activator.CreateInstance(type) : null;
@@ -160,7 +160,7 @@ namespace BlazingTwistConfigTools.config.deserialization {
 		private void DeserializeNonGenericObject(TokenNode node, Type objectType, EDataType eType, object objectInstance) {
 			//Debug.Assert(node.listValues != null);
 			Dictionary<string, FieldInfo> fieldInfos = GetTypeInfo(objectType, eType);
-			List<string> keysToVerify = verifyAllKeysSet ? fieldInfos.Keys.ToList() : null;
+			List<string> keysToVerify = options.verifyAllKeysSet ? fieldInfos.Keys.ToList() : null;
 			foreach (TokenNode childNode in node.listValues) {
 				if (childNode.key == null) {
 					throw new InvalidDataException($"Object-Entry on Line {childNode.lineNumber} has no key!");
@@ -174,11 +174,11 @@ namespace BlazingTwistConfigTools.config.deserialization {
 				}
 				Type fieldType = fieldInfo.FieldType;
 				fieldInfo.SetValue(objectInstance, DeserializeNodeValue(childNode, fieldType, EDataTypes_Extensions.GetDataType(fieldType)));
-				if (verifyAllKeysSet) {
+				if (options.verifyAllKeysSet) {
 					keysToVerify?.Remove(childNode.key);
 				}
 			}
-			if (verifyAllKeysSet) {
+			if (options.verifyAllKeysSet) {
 				if (keysToVerify != null && keysToVerify.Count > 0) {
 					throw new InvalidDataException($"Object on Line {node.lineNumber} was missing keys: ('{string.Join("', '", keysToVerify)}')");
 				}

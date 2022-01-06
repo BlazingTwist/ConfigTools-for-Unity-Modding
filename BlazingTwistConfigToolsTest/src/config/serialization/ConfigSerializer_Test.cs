@@ -61,8 +61,12 @@ namespace BlazingTwistConfigToolsTest.config.serialization {
 --- b = 1
 ";
 
-			IEnumerable<string> lines = new ConfigSerializer().Serialize(exampleNullableConfig, EFormatOption.QuoteValue, EFormatOption.QuoteValue);
-			Assert.AreEqual(expectedResult.Split(new []{'\r', '\n'}, StringSplitOptions.RemoveEmptyEntries), lines.ToArray());
+			IEnumerable<string> lines = new ConfigSerializer(
+					new ConfigOptions {
+							keyFormatOption = EFormatOption.QuoteValue,
+							valueFormatOption = EFormatOption.QuoteValue
+					}).Serialize(exampleNullableConfig);
+			Assert.AreEqual(expectedResult.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), lines.ToArray());
 		}
 
 		[Test]
@@ -70,7 +74,7 @@ namespace BlazingTwistConfigToolsTest.config.serialization {
 			const string normalString = "asdf";
 			string specialCharacterString = "" + SpecialCharacters.objectDepth + SpecialCharacters.valueAssignment + SpecialCharacters.objectAssignment
 					+ SpecialCharacters.nullChar + SpecialCharacters.stringChar + SpecialCharacters.escapeChar;
-			
+
 			ExampleNullableConfig exampleNullableConfig = new ExampleNullableConfig {
 					stringValue = normalString,
 					stringValue2 = specialCharacterString,
@@ -122,12 +126,16 @@ namespace BlazingTwistConfigToolsTest.config.serialization {
 						$"--- {SpecialCharacters.FormatStringValue("b", keyOpt)} = {SpecialCharacters.FormatStringValue("1", valueOpt)}",
 				};
 			}
-			
+
 			foreach (EFormatOption keyOpt in (EFormatOption[])Enum.GetValues(typeof(EFormatOption))) {
 				foreach (EFormatOption valueOpt in (EFormatOption[])Enum.GetValues(typeof(EFormatOption))) {
-					string[] resultLines = new ConfigSerializer().Serialize(exampleNullableConfig, keyOpt, valueOpt).ToArray();
+					string[] resultLines = new ConfigSerializer(
+							new ConfigOptions {
+									keyFormatOption = keyOpt,
+									valueFormatOption = valueOpt
+							}).Serialize(exampleNullableConfig).ToArray();
 					Assert.AreEqual(ExpectedLines(keyOpt, valueOpt), resultLines, "keyOpt: {0}, valueOpt: {1}", keyOpt, valueOpt);
-				}				
+				}
 			}
 		}
 
@@ -139,8 +147,62 @@ namespace BlazingTwistConfigToolsTest.config.serialization {
 - a = 1
 - b = 2
 ";
-			IEnumerable<string> lines = new ConfigSerializer().Serialize(configInstance, EFormatOption.QuoteValue, EFormatOption.QuoteValue);
-			Assert.AreEqual(expectedResult.Split(new []{'\r', '\n'}, StringSplitOptions.RemoveEmptyEntries), lines.ToArray());
+			IEnumerable<string> lines = new ConfigSerializer(
+					new ConfigOptions {
+							keyFormatOption = EFormatOption.QuoteValue,
+							valueFormatOption = EFormatOption.QuoteValue
+					}).Serialize(configInstance);
+			Assert.AreEqual(expectedResult.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), lines.ToArray());
+		}
+
+		[Test]
+		public void Test_Serialize_Implicitly() {
+			/* Scenarios to check:
+			 *  - explicit by default, no override
+			 *    + implicit by default, override both types
+			 *  - explicit by default, override outer type
+			 *    + implicit by default, override inner type
+			 *  - explicit by default, override inner type
+			 *    + implicit by default, override outer type
+			 *  - explicit by default, override both types
+			 *    + implicit by default, no override
+			 */
+
+			IEnumerable<string> GetLines(bool outerIsExplicit, bool innerIsExplicit) {
+				if (!outerIsExplicit) {
+					yield return "- a = 3";
+				}
+				yield return "- b = 4";
+				if (!outerIsExplicit) {
+					yield return "- subClass :";
+					if (!innerIsExplicit) {
+						yield return "-- a = 5";
+					}
+					yield return "-- b = 6";
+				}
+			}
+
+			ImplicitConfig configToSerialize = new ImplicitConfig(3, 4, new ImplicitConfig.SubClass(5, 6));
+
+			void RunTest(bool outerIsExplicit, bool innerIsExplicit, ConfigOptions configOptions) {
+				ConfigSerializer configDeserializer = new ConfigSerializer(configOptions);
+				string[] resultLines = configDeserializer.Serialize(configToSerialize).ToArray();
+				string[] expectedLines = GetLines(outerIsExplicit, innerIsExplicit).ToArray();
+				bool areEqual = resultLines.Length == expectedLines.Length && !resultLines.Except(expectedLines).Any();
+				Assert.True(areEqual, "Expected lines: '{0}', Received Lines: '{1}'", string.Join("', '", expectedLines), string.Join("', '", resultLines));
+			}
+
+			Type outerType = typeof(ImplicitConfig);
+			Type innerType = typeof(ImplicitConfig.SubClass);
+
+			RunTest(true, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit });
+			RunTest(true, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, explicitTypes = new List<Type> { outerType, innerType } });
+			RunTest(false, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, implicitTypes = new List<Type> { outerType } });
+			RunTest(false, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, explicitTypes = new List<Type> { innerType } });
+			RunTest(true, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, implicitTypes = new List<Type> { innerType } });
+			RunTest(true, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, explicitTypes = new List<Type> { outerType } });
+			RunTest(false, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, implicitTypes = new List<Type> { outerType, innerType } });
+			RunTest(false, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit });
 		}
 	}
 }

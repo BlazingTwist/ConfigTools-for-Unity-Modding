@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using BlazingTwistConfigTools.config;
 using BlazingTwistConfigTools.config.deserialization;
 using BlazingTwistConfigToolsTest._dataClasses;
 using NUnit.Framework;
@@ -68,7 +70,7 @@ namespace BlazingTwistConfigToolsTest.config.deserialization {
 
 			ConfigDeserializer<ExampleNullableConfig> configDeserializer = new ConfigDeserializer<ExampleNullableConfig>(
 					DeserializerUtils.Tokenize(new LineReader(new StringReader(configString))).ToList(),
-					false
+					new ConfigOptions()
 			);
 			ExampleNullableConfig deserializeResult = configDeserializer.Deserialize();
 
@@ -86,7 +88,7 @@ namespace BlazingTwistConfigToolsTest.config.deserialization {
 
 			ConfigDeserializer<ExampleSingleFieldConfig> configDeserializer = new ConfigDeserializer<ExampleSingleFieldConfig>(
 					DeserializerUtils.Tokenize(new LineReader(new StringReader(configString))).ToList(),
-					false
+					new ConfigOptions()
 			);
 			ExampleSingleFieldConfig deserializeResult = configDeserializer.Deserialize();
 
@@ -103,12 +105,70 @@ namespace BlazingTwistConfigToolsTest.config.deserialization {
 ";
 			ConfigDeserializer<ExampleSingleFieldConfig> configDeserializer = new ConfigDeserializer<ExampleSingleFieldConfig>(
 					DeserializerUtils.Tokenize(new LineReader(new StringReader(configString))).ToList(),
-					false
+					new ConfigOptions()
 			);
 			configDeserializer.Deserialize(targetInstance);
-			
+
 			Assert.AreEqual(3, targetInstance.firstField.secondField.a);
 			Assert.AreEqual(4, targetInstance.firstField.secondField.b);
+		}
+
+		[Test]
+		public void Test_Deserialize_Implicitly() {
+			/* Scenarios to check:
+			 *  - explicit by default, no override
+			 *    + implicit by default, override both types
+			 *  - explicit by default, override outer type
+			 *    + implicit by default, override inner type
+			 *  - explicit by default, override inner type
+			 *    + implicit by default, override outer type
+			 *  - explicit by default, override both types
+			 *    + implicit by default, no override
+			 */
+
+			IEnumerable<string> GetLines(bool outerIsExplicit, bool innerIsExplicit) {
+				if (!outerIsExplicit) {
+					yield return "- a = 3";
+				}
+				yield return "- b = 4";
+				if (!outerIsExplicit) {
+					yield return "- subClass :";
+					if (!innerIsExplicit) {
+						yield return "-- a = 5";
+					}
+					yield return "-- b = 6";
+				}
+			}
+
+			void RunTest(bool outerIsExplicit, bool innerIsExplicit, ConfigOptions configOptions) {
+				ConfigDeserializer<ImplicitConfig> configDeserializer = new ConfigDeserializer<ImplicitConfig>(
+						DeserializerUtils.Tokenize(new LineReader(GetLines(outerIsExplicit, innerIsExplicit))).ToList(),
+						configOptions);
+				ImplicitConfig result = configDeserializer.Deserialize();
+				if (outerIsExplicit) {
+					Assert.AreEqual(0, result.a);
+					Assert.AreEqual(4, result.c);
+					Assert.AreEqual(null, result.subClass);
+				} else {
+					Assert.AreEqual(3, result.a);
+					Assert.AreEqual(4, result.c);
+					Assert.NotNull(result.subClass);
+					Assert.AreEqual(innerIsExplicit ? 0 : 5, result.subClass.a);
+					Assert.AreEqual(6, result.subClass.c);
+				}
+			}
+
+			Type outerType = typeof(ImplicitConfig);
+			Type innerType = typeof(ImplicitConfig.SubClass);
+
+			RunTest(true, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, verifyAllKeysSet = true });
+			RunTest(true, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, explicitTypes = new List<Type> { outerType, innerType }, verifyAllKeysSet = true });
+			RunTest(false, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, implicitTypes = new List<Type> { outerType }, verifyAllKeysSet = true });
+			RunTest(false, true, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, explicitTypes = new List<Type> { innerType }, verifyAllKeysSet = true });
+			RunTest(true, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, implicitTypes = new List<Type> { innerType }, verifyAllKeysSet = true });
+			RunTest(true, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, explicitTypes = new List<Type> { outerType }, verifyAllKeysSet = true });
+			RunTest(false, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Explicit, implicitTypes = new List<Type> { outerType, innerType }, verifyAllKeysSet = true });
+			RunTest(false, false, new ConfigOptions { fieldSelectorOption = EFieldSelectorOption.Implicit, verifyAllKeysSet = true });
 		}
 	}
 }

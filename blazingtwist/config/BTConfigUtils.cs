@@ -17,19 +17,16 @@ namespace BlazingTwistConfigTools.config {
 		/// </summary>
 		/// <param name="pathToFile">absolute path to the config file. '/' will be replaced with the DirectorySeparatorChar</param>
 		/// <param name="instance">optional - instance of the existing config</param>
-		/// <param name="verifyAllFieldsSet">if enabled, verifies that all Fields of TConfigType are set by the config</param>
-		/// <param name="keyFormatOption">default format option for serializing keys</param>
-		/// <param name="valueFormatOption">default format option for serializing values</param>
+		/// <param name="configOptions">use this to configure the de/serializer</param>
 		/// <typeparam name="TConfigType">type of the config to load</typeparam>
 		/// <returns>instance of the loaded config</returns>
-		public static TConfigType LoadConfigFile<TConfigType>(string pathToFile, [CanBeNull] TConfigType instance, bool verifyAllFieldsSet,
-				EFormatOption keyFormatOption = EFormatOption.UseDefault, EFormatOption valueFormatOption = EFormatOption.UseDefault) {
+		public static TConfigType LoadConfigFile<TConfigType>(string pathToFile, [CanBeNull] TConfigType instance, ConfigOptions configOptions = null) {
 			pathToFile = pathToFile.Replace('/', Path.DirectorySeparatorChar);
 			if (!File.Exists(pathToFile)) {
 				if (instance == null) {
 					instance = (TConfigType)Activator.CreateInstance(typeof(TConfigType));
 				}
-				IEnumerable<string> lines = new ConfigSerializer().Serialize(instance, keyFormatOption, valueFormatOption);
+				IEnumerable<string> lines = new ConfigSerializer(configOptions).Serialize(instance);
 
 				using (StreamWriter writer = new StreamWriter(pathToFile, false)) {
 					foreach (string line in lines) {
@@ -48,7 +45,7 @@ namespace BlazingTwistConfigTools.config {
 							lines.Add(line);
 						}
 					}
-					ConfigDeserializer<TConfigType> deserializer = new ConfigDeserializer<TConfigType>(DeserializerUtils.Tokenize(lines).ToList(), verifyAllFieldsSet);
+					ConfigDeserializer<TConfigType> deserializer = new ConfigDeserializer<TConfigType>(DeserializerUtils.Tokenize(lines).ToList(), configOptions);
 					return instance == null ? deserializer.Deserialize() : deserializer.Deserialize(instance);
 				}
 			} catch (Exception e) {

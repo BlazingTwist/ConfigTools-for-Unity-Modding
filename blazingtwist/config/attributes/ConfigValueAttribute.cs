@@ -37,7 +37,7 @@ namespace BlazingTwistConfigTools.config.attributes {
 		private EFormatOption GetKeyFormatOption(EFormatOption fallback) {
 			return _keyFormatOption == EFormatOption.UseDefault ? fallback : _keyFormatOption;
 		}
-		
+
 		private EFormatOption GetValueFormatOption(EFormatOption fallback) {
 			return _valueFormatOption == EFormatOption.UseDefault ? fallback : _valueFormatOption;
 		}
@@ -47,35 +47,19 @@ namespace BlazingTwistConfigTools.config.attributes {
 			IEnumerable<string> dataLines;
 			keyFormatOption = GetKeyFormatOption(keyFormatOption);
 			valueFormatOption = GetValueFormatOption(valueFormatOption);
-			
+
 			if (serializationInfo.eDataType.IsSingleValueType()) {
+				string declarationString = ConfigSerializer.SerializeValueAssignmentDeclaration(name ?? fieldInfo.Name, currentIndentation + indentation, currentObjectDepth, keyFormatOption);
 				string dataString = ConfigSerializer.SerializeSingleValueType(serializationInfo, valueFormatOption);
-				dataLines = new[] { SerializeOneliner(fieldInfo, dataString, currentIndentation, currentObjectDepth, keyFormatOption) };
+				dataLines = new[] { declarationString + dataString };
 			} else {
-				string declarationString = SerializeMultilineFieldDeclaration(fieldInfo, currentIndentation, currentObjectDepth, keyFormatOption);
+				string declarationString = ConfigSerializer.SerializeObjectAssignmentDeclaration(name ?? fieldInfo.Name, currentIndentation + indentation, currentObjectDepth, keyFormatOption);
 				dataLines = new[] { declarationString }
 						.Concat(serializer.SerializeMultiValueType(serializationInfo, currentIndentation + indentation, currentObjectDepth + 1, keyFormatOption, valueFormatOption));
 			}
 			return Enumerable.Repeat("", emptyLinesAbove)
 					.Concat(comments.Select(comment => new string('\t', currentIndentation + indentation) + SpecialCharacters.singleLineComment + " " + comment))
 					.Concat(dataLines);
-		}
-
-		private string SerializeOneliner(FieldInfo fieldInfo, string dataString, int currentIndentation, int currentObjectDepth, EFormatOption keyFormatOption) {
-			return new string('\t', currentIndentation + indentation)
-					+ new string(SpecialCharacters.objectDepth, currentObjectDepth)
-					+ " "
-					+ SpecialCharacters.FormatStringValue(name ?? fieldInfo.Name, keyFormatOption)
-					+ $" {SpecialCharacters.valueAssignment} "
-					+ dataString;
-		}
-
-		private string SerializeMultilineFieldDeclaration(FieldInfo fieldInfo, int currentIndentation, int currentObjectDepth, EFormatOption keyFormatOption) {
-			return new string('\t', currentIndentation + indentation)
-					+ new string(SpecialCharacters.objectDepth, currentObjectDepth)
-					+ " "
-					+ SpecialCharacters.FormatStringValue(name ?? fieldInfo.Name, keyFormatOption)
-					+ " " + SpecialCharacters.objectAssignment;
 		}
 	}
 }

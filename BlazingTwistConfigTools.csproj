@@ -67,12 +67,16 @@
         <Compile Include="blazingtwist\config\attributes\SerializationAttribute.cs" />
         <Compile Include="blazingtwist\config\attributes\SingleFieldTypeAttribute.cs" />
         <Compile Include="blazingtwist\config\BTConfigUtils.cs" />
+        <Compile Include="blazingtwist\config\ConfigOptions.cs" />
         <Compile Include="blazingtwist\config\deserialization\ConfigDeserializer.cs" />
         <Compile Include="blazingtwist\config\deserialization\DeserializerUtils.cs" />
         <Compile Include="blazingtwist\config\deserialization\LineReader.cs" />
         <Compile Include="blazingtwist\config\deserialization\TokenCollector.cs" />
+        <Compile Include="blazingtwist\config\EFieldSelectorOption.cs" />
         <Compile Include="blazingtwist\config\EFormatOption.cs" />
         <Compile Include="blazingtwist\config\serialization\ConfigSerializer.cs" />
+        <Compile Include="blazingtwist\config\serialization\IFieldSerializer.cs" />
+        <Compile Include="blazingtwist\config\serialization\ImplicitFieldSerializer.cs" />
         <Compile Include="blazingtwist\config\serialization\SerializationInfo.cs" />
         <Compile Include="blazingtwist\config\SpecialCharacters.cs" />
         <Compile Include="blazingtwist\config\types\ConfigNode.cs" />
@@ -85,6 +89,7 @@
     <ItemGroup>
       <Content Include="documentation\Attributes.md" />
       <Content Include="documentation\SpecialCharacters.md" />
+      <Content Include="documentation\_TODO.md" />
       <Content Include="documentation\Types.md" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

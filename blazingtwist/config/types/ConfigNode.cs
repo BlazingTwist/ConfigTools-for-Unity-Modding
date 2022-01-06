@@ -9,7 +9,7 @@ namespace BlazingTwistConfigTools.config.types {
 		public string Key { get; private set; }
 		public string Value { get; private set; }
 
-		private void InitializeTwoTokens(List<TokenCollector.TokenInfo> tokens) {
+		private void InitializeTwoTokens(IReadOnlyList<TokenCollector.TokenInfo> tokens) {
 			//Debug.Assert(tokens.Count == 2);
 			// raw value '- value'
 			// list mapping '- :'
@@ -28,7 +28,7 @@ namespace BlazingTwistConfigTools.config.types {
 			}
 		}
 
-		private void InitializeThreeTokens(List<TokenCollector.TokenInfo> tokens) {
+		private void InitializeThreeTokens(IReadOnlyList<TokenCollector.TokenInfo> tokens) {
 			//Debug.Assert(tokens.Count == 3);
 			// subMapping '- key :'
 			TokenCollector.TokenInfo secondToken = tokens[1];
@@ -42,7 +42,7 @@ namespace BlazingTwistConfigTools.config.types {
 			Key = secondToken.value;
 		}
 
-		private void InitializeFourTokens(List<TokenCollector.TokenInfo> tokens) {
+		private void InitializeFourTokens(IReadOnlyList<TokenCollector.TokenInfo> tokens) {
 			//Debug.Assert(tokens.Count == 4);
 			// keyValuePair '- key = value'
 			TokenCollector.TokenInfo secondToken = tokens[1];
@@ -61,7 +61,7 @@ namespace BlazingTwistConfigTools.config.types {
 			Value = fourthToken.value;
 		}
 
-		public ConfigNode(List<TokenCollector.TokenInfo> tokens) {
+		public ConfigNode(IReadOnlyList<TokenCollector.TokenInfo> tokens) {
 			int tokenCount = tokens.Count;
 			if (tokenCount > 0) {
 				TokenCollector.TokenInfo firstToken = tokens[0];

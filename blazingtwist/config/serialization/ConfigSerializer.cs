@@ -10,14 +10,16 @@ using JetBrains.Annotations;
 namespace BlazingTwistConfigTools.config.serialization {
 	public class ConfigSerializer {
 		private readonly Dictionary<Type, List<ConfigTypeInfo>> typeCache;
+		private readonly ConfigOptions options;
 
-		public ConfigSerializer() {
+		public ConfigSerializer(ConfigOptions options) {
 			typeCache = new Dictionary<Type, List<ConfigTypeInfo>>();
+			this.options = options;
 		}
 
 		[NotNull]
-		public IEnumerable<string> Serialize(object data, EFormatOption keyFormatOption, EFormatOption valueFormatOption) {
-			return Serialize(data, 0, 1, keyFormatOption, valueFormatOption);
+		public IEnumerable<string> Serialize(object data) {
+			return Serialize(data, 0, 1, options.keyFormatOption, options.valueFormatOption);
 		}
 
 		[NotNull]
@@ -63,7 +65,7 @@ namespace BlazingTwistConfigTools.config.serialization {
 		}
 
 		[NotNull]
-		public static string SerializeSingleValueType(SerializationInfo serializationInfo, EFormatOption valueFormatOption) {
+		internal static string SerializeSingleValueType(SerializationInfo serializationInfo, EFormatOption valueFormatOption) {
 			if (serializationInfo.dataInstance == null) {
 				return SpecialCharacters.FormatStringValue(null, valueFormatOption);
 			}
@@ -75,7 +77,23 @@ namespace BlazingTwistConfigTools.config.serialization {
 		}
 
 		[NotNull]
-		public IEnumerable<string> SerializeMultiValueType(SerializationInfo serializationInfo, int currentIndentation, int currentObjectDepth,
+		internal static string SerializeValueAssignmentDeclaration(string keyString, int indentation, int objectDepth, EFormatOption keyFormatOption) {
+			return new string('\t', indentation)
+					+ new string(SpecialCharacters.objectDepth, objectDepth) + " "
+					+ SpecialCharacters.FormatStringValue(keyString, keyFormatOption)
+					+ $" {SpecialCharacters.valueAssignment} ";
+		}
+		
+		[NotNull]
+		internal static string SerializeObjectAssignmentDeclaration(string keyString, int indentation, int objectDepth, EFormatOption keyFormatOption) {
+			return new string('\t', indentation)
+					+ new string(SpecialCharacters.objectDepth, objectDepth) + " "
+					+ SpecialCharacters.FormatStringValue(keyString, keyFormatOption)
+					+ " " + SpecialCharacters.objectAssignment;
+		}
+
+		[NotNull]
+		internal IEnumerable<string> SerializeMultiValueType(SerializationInfo serializationInfo, int currentIndentation, int currentObjectDepth,
 				EFormatOption keyFormatOption, EFormatOption valueFormatOption) {
 			if (serializationInfo.dataInstance == null) {
 				return new string[] { };
@@ -131,7 +149,7 @@ namespace BlazingTwistConfigTools.config.serialization {
 				EFormatOption keyFormatOption, EFormatOption valueFormatOption) {
 			List<ConfigTypeInfo> typeFieldInfo;
 			if (!typeCache.ContainsKey(serializationInfo.dataType)) {
-				typeFieldInfo = ConfigTypeInfo.GatherTypeInfo(serializationInfo.dataType).ToList();
+				typeFieldInfo = ConfigTypeInfo.GatherTypeInfo(serializationInfo.dataType, options).ToList();
 				typeCache[serializationInfo.dataType] = typeFieldInfo;
 			} else {
 				typeFieldInfo = typeCache[serializationInfo.dataType];
@@ -143,7 +161,7 @@ namespace BlazingTwistConfigTools.config.serialization {
 					let fieldValue = configInfo.fieldInfo.GetValue(serializationInfo.dataInstance)
 					let fieldType = configInfo.fieldInfo.FieldType
 					let info = new SerializationInfo(fieldValue, fieldType, EDataTypes_Extensions.GetDataType(fieldType))
-					select configInfo.serializationAttribute.Serialize(this, configInfo.fieldInfo, info, currentIndentation, currentObjectDepth, keyFormatOption, valueFormatOption)) {
+					select configInfo.fieldSerializer.Serialize(this, configInfo.fieldInfo, info, currentIndentation, currentObjectDepth, keyFormatOption, valueFormatOption)) {
 				result.AddRange(serializeResult);
 			}
 			return result;

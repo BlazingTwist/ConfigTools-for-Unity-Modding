@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BlazingTwistConfigTools.config;
-using BlazingTwistConfigTools.config.attributes;
 using BlazingTwistConfigTools.config.deserialization;
-using BlazingTwistConfigTools.config.serialization;
 using BlazingTwistConfigTools.config.types;
-using BlazingTwistConfigTools.configurables;
-using BlazingTwistConfigToolsTest._dataClasses;
 using NUnit.Framework;
-using UnityEngine;
 
 namespace BlazingTwistConfigToolsTest.config.deserialization {
 	[TestFixture]
@@ -34,31 +27,6 @@ namespace BlazingTwistConfigToolsTest.config.deserialization {
 				Assert.AreEqual(key, instance.Key, $"configNode had invalid key | {instance}");
 				Assert.AreEqual(value, instance.Value, $"configNode had invalid value | {instance}");
 			}
-		}
-
-		class ConfigClass {
-			[ConfigComment(comments: "Vertical Camera Controls")]
-			[ConfigValue(indentation: 1)]
-			KeyBind cameraUp = new KeyBind(new List<Key> { new Key(KeyCode.W, false), new Key(KeyCode.LeftControl, true) });
-
-			[ConfigValue(indentation: 1, emptyLinesAbove: 1)]
-			KeyBind cameraDown = new KeyBind(new List<Key> { new Key(KeyCode.S, false), new Key(KeyCode.LeftControl, true) });
-
-			[ConfigComment(emptyLinesAbove: 1, comments: "Horizontal Camera Controls")]
-			[ConfigValue(indentation: 1)]
-			KeyBind cameraLeft = new KeyBind(new List<Key> { new Key(KeyCode.A, false), new Key(KeyCode.LeftControl, true) });
-
-			[ConfigValue(indentation: 1, emptyLinesAbove: 1)]
-			KeyBind cameraRight = new KeyBind(new List<Key> { new Key(KeyCode.D, false), new Key(KeyCode.LeftControl, true) });
-		}
-		
-		class ConfigClass2 {
-			[SingleFieldType(fieldName: nameof(someInt))]
-			class SubClass {
-				[ConfigValue] int someInt = 1;
-			}
-			[ConfigValue] SubClass subClass1 = new SubClass();
-			[ConfigValue] SubClass subClass2 = new SubClass();
 		}
 
 		[Test]
@@ -95,23 +63,6 @@ namespace BlazingTwistConfigToolsTest.config.deserialization {
 			for (int i = 0; i < tokenCount; i++) {
 				verifiers[i].Verify(tokens[i]);
 			}
-
-			// TODO implement this
-			/*foreach (FieldInfo fieldInfo in typeof(ExampleConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public)) {
-				Match match = Regex.Match(fieldInfo.Name, "^<(.+)>k__BackingField");
-				if (match.Success && match.Groups.Count > 1) {
-					Console.WriteLine($"Property: {match.Groups[1]} - {fieldInfo.FieldType}");
-				} else {
-					Console.WriteLine("Field: " + fieldInfo.Name + " - " + fieldInfo.FieldType);
-				}
-			}*/
-
-			IEnumerable<string> lines = new ConfigSerializer().Serialize(new ConfigClass2(), EFormatOption.Escape, EFormatOption.Escape);
-			Console.WriteLine("-----");
-			foreach (string line in lines) {
-				Console.WriteLine(line);
-			}
-			Console.WriteLine("-----");
 		}
 
 		[Test]

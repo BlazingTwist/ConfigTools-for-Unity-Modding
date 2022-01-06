@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 
 namespace BlazingTwistConfigTools.config.attributes {
 	[AttributeUsage(AttributeTargets.Class)]
+	[MeansImplicitUse]
 	[PublicAPI]
 	public class SingleFieldTypeAttribute : Attribute {
 		private string fieldName { get; }

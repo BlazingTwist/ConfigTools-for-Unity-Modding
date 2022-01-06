@@ -73,6 +73,7 @@
         <Compile Include="src\_dataClasses\ExampleConfig.cs" />
         <Compile Include="src\_dataClasses\ExampleNullableConfig.cs" />
         <Compile Include="src\_dataClasses\ExampleSingleFieldConfig.cs" />
+        <Compile Include="src\_dataClasses\ImplicitConfig.cs" />
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\BlazingTwistConfigTools.csproj">
