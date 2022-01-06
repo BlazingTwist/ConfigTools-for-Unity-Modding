@@ -53,18 +53,28 @@
         <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>..\SoR_Modding\SoR_BepInEx_Libraries\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
+
+        <Reference Include="UnityEngine.InputLegacyModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>Dependencies\UnityEngine.InputLegacyModule.dll</HintPath>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="blazingtwist\configurables\Key.cs" />
+        <Compile Include="blazingtwist\configurables\KeyBind.cs" />
+        <Compile Include="blazingtwist\configurables\KeyTypeConverter.cs" />
         <Compile Include="blazingtwist\config\attributes\ConfigCommentAttribute.cs" />
         <Compile Include="blazingtwist\config\attributes\ConfigValueAttribute.cs" />
         <Compile Include="blazingtwist\config\attributes\SerializationAttribute.cs" />
+        <Compile Include="blazingtwist\config\attributes\SingleFieldTypeAttribute.cs" />
         <Compile Include="blazingtwist\config\BTConfigUtils.cs" />
         <Compile Include="blazingtwist\config\deserialization\ConfigDeserializer.cs" />
         <Compile Include="blazingtwist\config\deserialization\DeserializerUtils.cs" />
         <Compile Include="blazingtwist\config\deserialization\LineReader.cs" />
         <Compile Include="blazingtwist\config\deserialization\TokenCollector.cs" />
+        <Compile Include="blazingtwist\config\EFormatOption.cs" />
         <Compile Include="blazingtwist\config\serialization\ConfigSerializer.cs" />
         <Compile Include="blazingtwist\config\serialization\SerializationInfo.cs" />
+        <Compile Include="blazingtwist\config\SpecialCharacters.cs" />
         <Compile Include="blazingtwist\config\types\ConfigNode.cs" />
         <Compile Include="blazingtwist\config\types\ConfigTypeInfo.cs" />
         <Compile Include="blazingtwist\config\types\EDataType.cs" />
@@ -73,6 +83,7 @@
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
+      <Content Include="documentation\Attributes.md" />
       <Content Include="documentation\SpecialCharacters.md" />
       <Content Include="documentation\Types.md" />
     </ItemGroup>

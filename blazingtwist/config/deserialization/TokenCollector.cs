@@ -2,8 +2,9 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using BlazingTwistConfigTools.config.types;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
+namespace BlazingTwistConfigTools.config.deserialization {
 	public class TokenCollector {
 		public struct TokenInfo {
 			public ETokenType tokenType;

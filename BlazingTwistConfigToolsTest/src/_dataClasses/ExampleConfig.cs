@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using BlazingTwistConfigTools.blazingtwist.config.serialization;
+using BlazingTwistConfigTools.config.attributes;
 
 namespace BlazingTwistConfigToolsTest._dataClasses {
 	public class ExampleConfig {

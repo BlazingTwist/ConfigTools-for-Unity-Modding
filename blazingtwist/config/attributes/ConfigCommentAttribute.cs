@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using BlazingTwistConfigTools.config.serialization;
 using JetBrains.Annotations;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.serialization {
+namespace BlazingTwistConfigTools.config.attributes {
 	[AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
 	[PublicAPI]
 	public class ConfigCommentAttribute : SerializationAttribute {
@@ -20,9 +21,11 @@ namespace BlazingTwistConfigTools.blazingtwist.config.serialization {
 			this.comments = comments ?? new string[] { };
 		}
 
-		public override IEnumerable<string> Serialize(ConfigSerializer serializer, FieldInfo fieldInfo, SerializationInfo serializationInfo, int currentIndentation, int currentObjectDepth) {
+		public override IEnumerable<string> Serialize(ConfigSerializer serializer, FieldInfo fieldInfo, SerializationInfo serializationInfo, int currentIndentation, int currentObjectDepth,
+				EFormatOption keyFormatOption, EFormatOption valueFormatOption) {
 			return Enumerable.Repeat("", emptyLinesAbove)
-					.Concat(comments.Select(comment => new string('\t', currentIndentation + indentation) + "/* " + comment + " */"));
+					.Concat(comments.Select(comment => new string('\t', currentIndentation + indentation)
+							+ SpecialCharacters.multiLineComment + " " + comment + " " + SpecialCharacters.multiLineCommentEnd));
 		}
 	}
 }

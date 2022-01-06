@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BlazingTwistConfigTools.blazingtwist.config.deserialization;
+using BlazingTwistConfigTools.config.deserialization;
 using NUnit.Framework;
 
 namespace BlazingTwistConfigToolsTest.config.deserialization {

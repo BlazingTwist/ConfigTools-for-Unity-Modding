@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.types {
+namespace BlazingTwistConfigTools.config.types {
 	public static class EDataTypes_Extensions {
 		public static EDataType GetDataType(Type type) {
 			if (Attribute.IsDefined(type, typeof(TypeConverterAttribute))) {

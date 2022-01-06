@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using BlazingTwistConfigTools.blazingtwist.config.serialization;
+using BlazingTwistConfigTools.config.attributes;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.types {
+namespace BlazingTwistConfigTools.config.types {
 	public class ConfigTypeInfo {
 		public readonly FieldInfo fieldInfo;
 		public readonly SerializationAttribute serializationAttribute;

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
+namespace BlazingTwistConfigTools.config.deserialization {
 	public class LineReader {
 		private readonly List<char[]> lines;
 		private readonly int lineCount;
@@ -50,7 +50,7 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			}
 
 			char currentChar = currentLine[charIndex];
-			wasEscaped = currentChar == '\\';
+			wasEscaped = currentChar == SpecialCharacters.escapeChar;
 			if (wasEscaped) {
 				char? nextChar = PeekNextCharOnLine();
 				if (nextChar == null) {

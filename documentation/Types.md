@@ -167,4 +167,36 @@ class ExampleClass {
 
 ### NonGenericClasses
 
-TODO set up implicit type (de-)serialization.
+This can be any class without generic type arguments.  
+(That means you can also deserialize directly to classes of the game!)  
+
+If you are the owner of the class, you can add Attributes to configure
+how your class will be (de)serialized. (see Attributes.md)
+
+(De)serialization of NGC only respects Fields.  
+That means you'll have to access properties through their corresponding field.  
+For Auto-Properties you can simply use the Property-Name.
+
+You can tell ConfigTools to deserialize NGC implicitly or explicitly.  
+Implicit means that **all** fields of the class will be deserialized,
+whereas explicit only uses fields with the `ConfigValue` attribute.
+
+Example:
+```c#
+class ConfigClass {
+    public int intField = 1;
+    private int _intProperty = 2;
+    
+    int IntProperty {
+        get => _intProperty;
+        set => _intProperty = value;
+    }
+    
+    int IntAutoProperty { get; set; } = 3
+}
+```
+```
+- intField = 1
+- _intProperty = 2
+- IntAutoProperty = 3
+```

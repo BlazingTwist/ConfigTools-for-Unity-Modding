@@ -2,13 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using BlazingTwistConfigTools.blazingtwist.config.serialization;
-using BlazingTwistConfigTools.blazingtwist.config.types;
+using System.Text.RegularExpressions;
+using BlazingTwistConfigTools.config.attributes;
+using BlazingTwistConfigTools.config.types;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
+namespace BlazingTwistConfigTools.config.deserialization {
 	public class ConfigDeserializer<ConfigType> {
 		private struct TokenNode {
 			public readonly int lineNumber;
@@ -26,29 +27,6 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 		private readonly bool verifyAllKeysSet;
 		private readonly Dictionary<Type, Dictionary<string, FieldInfo>> typeCache;
 		private readonly TokenNode rootNode;
-
-		private static Dictionary<Type, Dictionary<string, FieldInfo>> GatherAllTypes(Dictionary<Type, Dictionary<string, FieldInfo>> cache, Type type, EDataType eDataType) {
-			if (eDataType != EDataType.NonGenericClass) {
-				return cache;
-			}
-
-			if (!cache.ContainsKey(type)) {
-				Dictionary<string, FieldInfo> fieldInfos = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public)
-						.Where(field => Attribute.IsDefined(field, typeof(ConfigValueAttribute)))
-						.ToDictionary(field => field.GetCustomAttribute<ConfigValueAttribute>().name ?? field.Name, field => field);
-				cache[type] = fieldInfos;
-
-				foreach (Type fieldType in fieldInfos.Values.Select(field => field.FieldType)) {
-					GatherAllTypes(cache, fieldType, EDataTypes_Extensions.GetDataType(fieldType));
-					if (fieldType.IsGenericType) {
-						foreach (Type genericArgument in fieldType.GetGenericArguments()) {
-							GatherAllTypes(cache, genericArgument, EDataTypes_Extensions.GetDataType(genericArgument));
-						}
-					}
-				}
-			}
-			return cache;
-		}
 
 		private static TokenNode BuildNode(IReadOnlyList<ConfigNode> nodes, int nodeIndex, ConfigNode node) {
 			TokenNode currentNode = new TokenNode(node);
@@ -89,11 +67,30 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 
 		public ConfigDeserializer(IReadOnlyList<ConfigNode> nodes, bool verifyAllKeysSet) {
 			this.verifyAllKeysSet = verifyAllKeysSet;
-			typeCache = GatherAllTypes(new Dictionary<Type, Dictionary<string, FieldInfo>>(), typeof(ConfigType), EDataTypes_Extensions.GetDataType(typeof(ConfigType)));
+			typeCache = new Dictionary<Type, Dictionary<string, FieldInfo>>();
 			rootNode = new TokenNode { listValues = GatherRootNodes(nodes) };
 		}
 
-		private object DeserializeSimpleValue(TokenNode node, Type type, EDataType eDataType) {
+		private Dictionary<string, FieldInfo> GetTypeInfo(Type type, EDataType eDataType) {
+			if (eDataType != EDataType.NonGenericClass) {
+				return null;
+			}
+			if (typeCache.ContainsKey(type)) {
+				return typeCache[type];
+			}
+			
+			Dictionary<string, FieldInfo> result = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public)
+					.Where(field => Attribute.IsDefined(field, typeof(ConfigValueAttribute)))
+					.ToDictionary(field => {
+						string name = field.GetCustomAttribute<ConfigValueAttribute>().name ?? field.Name;
+						Match match = Regex.Match(name, "^<(.+)>k__BackingField"); // TODO implement this
+						return field.GetCustomAttribute<ConfigValueAttribute>().name ?? field.Name;
+					}, field => field);
+			typeCache[type] = result;
+			return result;
+		}
+
+		private object DeserializeSimpleValue(TokenNode node, Type type) {
 			//Debug.Assert(!eDataType.IsSingleValueType());
 			if (node.simpleValue == null) {
 				return type.IsValueType ? Activator.CreateInstance(type) : null;
@@ -112,7 +109,7 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			}
 		}
 
-		private void DeserializeDictionary(TokenNode node, Type keyType, EDataType eKeyType, Type valueType, EDataType eValueType, IDictionary resultDictionary) {
+		private void DeserializeDictionary(TokenNode node, Type keyType, Type valueType, EDataType eValueType, IDictionary resultDictionary) {
 			//Debug.Assert(node.listValues != null);
 			//Debug.Assert(eKeyType.IsSingleValueType());
 			foreach (TokenNode childNode in node.listValues) {
@@ -130,9 +127,39 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			}
 		}
 
-		private void DeserializeNonGenericObject(TokenNode node, Type objectType, object objectInstance) {
+		private object DeserializeSingleFieldType(TokenNode node, Type objectType, object instanceToUse, IReadOnlyList<FieldInfo> fieldChain) {
+			int fieldCount = fieldChain.Count;
+			if (fieldCount <= 0) {
+				throw new InvalidDataException($"Tried to Deserialize SingleFieldType '{objectType.FullName}' but did not find any Fields!");
+			}
+			FieldInfo lastField = fieldChain[fieldCount - 1];
+			EDataType lastEType = EDataTypes_Extensions.GetDataType(lastField.FieldType);
+			bool isSingleValueType = lastEType.IsSingleValueType();
+			if (isSingleValueType && node.simpleValue == null
+					|| !isSingleValueType && node.listValues.Count == 0) {
+				return null;
+			}
+
+			object lastFieldValue = DeserializeNodeValue(node, lastField.FieldType, lastEType);
+			if (lastFieldValue == null) {
+				return null;
+			}
+
+			object resultInstance = instanceToUse ?? Activator.CreateInstance(objectType);
+			object lastInstance = resultInstance;
+			for (int i = 0; i < fieldCount - 1; i++) {
+				FieldInfo fieldInfo = fieldChain[i];
+				object fieldValue = Activator.CreateInstance(fieldInfo.FieldType);
+				fieldInfo.SetValue(lastInstance, fieldValue);
+				lastInstance = fieldValue;
+			}
+			lastField.SetValue(lastInstance, lastFieldValue);
+			return resultInstance;
+		}
+
+		private void DeserializeNonGenericObject(TokenNode node, Type objectType, EDataType eType, object objectInstance) {
 			//Debug.Assert(node.listValues != null);
-			Dictionary<string, FieldInfo> fieldInfos = typeCache[objectType];
+			Dictionary<string, FieldInfo> fieldInfos = GetTypeInfo(objectType, eType);
 			List<string> keysToVerify = verifyAllKeysSet ? fieldInfos.Keys.ToList() : null;
 			foreach (TokenNode childNode in node.listValues) {
 				if (childNode.key == null) {
@@ -158,34 +185,38 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			}
 		}
 
-		private object DeserializeNodeValue(TokenNode node, Type type, EDataType eType) {
+		private object DeserializeNodeValue(TokenNode node, Type type, EDataType eType, object instanceToUse = null) {
 			switch (eType) {
 				case EDataType.TypeConvertibleClass:
 				case EDataType.Enum:
 				case EDataType.Primitive:
 				case EDataType.String: {
-					return DeserializeSimpleValue(node, type, eType);
+					return DeserializeSimpleValue(node, type);
 				}
 				case EDataType.GenericList: {
-					IList list = (IList)Activator.CreateInstance(type);
+					IList list = (IList)(instanceToUse ?? Activator.CreateInstance(type));
 					Type listValueType = type.GetGenericArguments()[0];
 					DeserializeListValue(node, listValueType, EDataTypes_Extensions.GetDataType(listValueType), list);
 					return list;
 				}
 				case EDataType.GenericDictionary: {
-					IDictionary dictionary = (IDictionary)Activator.CreateInstance(type);
+					IDictionary dictionary = (IDictionary)(instanceToUse ?? (IDictionary)Activator.CreateInstance(type));
 					Type[] genericArguments = type.GetGenericArguments();
 					Type dictKeyType = genericArguments[0];
 					Type dictValueType = genericArguments[1];
-					DeserializeDictionary(node, dictKeyType, EDataTypes_Extensions.GetDataType(dictKeyType), dictValueType, EDataTypes_Extensions.GetDataType(dictValueType), dictionary);
+					DeserializeDictionary(node, dictKeyType, dictValueType, EDataTypes_Extensions.GetDataType(dictValueType), dictionary);
 					return dictionary;
 				}
 				case EDataType.NonGenericClass: {
+					if (SingleFieldTypeAttribute.IsSingleFieldType(type)) {
+						List<FieldInfo> resolveFieldChain = SingleFieldTypeAttribute.ResolveFieldChain(type);
+						return DeserializeSingleFieldType(node, type, instanceToUse, resolveFieldChain);
+					}
 					if (node.listValues.Count == 0) {
 						return null;
 					}
-					object objectInstance = Activator.CreateInstance(type);
-					DeserializeNonGenericObject(node, type, objectInstance);
+					object objectInstance = instanceToUse ?? Activator.CreateInstance(type);
+					DeserializeNonGenericObject(node, type, eType, objectInstance);
 					return objectInstance;
 				}
 				default:
@@ -193,26 +224,15 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			}
 		}
 
-		/**
-		 * TODO serialize to existing file
-		 * 
-		 * TODO versioning system
-		 * 
-		 * TODO
-		 *  optional implicit deserialization (without requiring ConfigValue attributes)
-		 *  - for all types
-		 *  - for a set of types
-		 */
 		public ConfigType Deserialize() {
 			Type configType = typeof(ConfigType);
-			ConfigType configInstance = (ConfigType)Activator.CreateInstance(configType);
-			DeserializeNonGenericObject(rootNode, configType, configInstance);
-			return configInstance;
+			ConfigType instance = (ConfigType)DeserializeNodeValue(rootNode, configType, EDataTypes_Extensions.GetDataType(configType));
+			return instance;
 		}
 
 		public ConfigType Deserialize(ConfigType instance) {
 			Type configType = typeof(ConfigType);
-			DeserializeNonGenericObject(rootNode, configType, instance);
+			DeserializeNodeValue(rootNode, configType, EDataTypes_Extensions.GetDataType(configType), instance);
 			return instance;
 		}
 	}

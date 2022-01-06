@@ -1,4 +1,4 @@
-﻿namespace BlazingTwistConfigTools.blazingtwist.config.types {
+﻿namespace BlazingTwistConfigTools.config.types {
 	public enum EDataType {
 		TypeConvertibleClass,
 		Enum,

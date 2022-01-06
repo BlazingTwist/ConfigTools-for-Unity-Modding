@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using BlazingTwistConfigTools.config.types;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
+namespace BlazingTwistConfigTools.config.deserialization {
 	public static class DeserializerUtils {
 		public static IEnumerable<ConfigNode> Tokenize(IEnumerable<string> lines) {
 			return Tokenize(new LineReader(lines));
@@ -49,19 +50,19 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			if (char.IsWhiteSpace(currentChar.Value)) {
 				return true;
 			}
-			if (currentChar == '"') {
+			if (currentChar == SpecialCharacters.stringChar) {
 				ReadString(reader, collector);
 				return true;
 			}
-			if (currentChar == '-') {
+			if (currentChar == SpecialCharacters.objectDepth) {
 				collector.AddToken(ETokenType.ObjectDepth, currentChar.Value, reader.LineNumber);
 				return true;
 			}
-			if (currentChar == '=' || currentChar == ':') {
+			if (currentChar == SpecialCharacters.valueAssignment || currentChar == SpecialCharacters.objectAssignment) {
 				collector.AddToken(ETokenType.Assignment, currentChar.Value, reader.LineNumber);
 				return true;
 			}
-			if (currentChar == '~') {
+			if (currentChar == SpecialCharacters.nullChar) {
 				collector.AddNullToken(reader.LineNumber);
 				return true;
 			}
@@ -72,7 +73,7 @@ namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
 			int stringStartLineNumber = reader.LineNumber;
 			reader.Next(out char? character, out bool wasEscaped);
 			while (character != null) {
-				if (!wasEscaped && character == '"') {
+				if (!wasEscaped && character == SpecialCharacters.stringChar) {
 					return;
 				}
 				collector.AddToken(ETokenType.StringValue, character.Value, stringStartLineNumber);

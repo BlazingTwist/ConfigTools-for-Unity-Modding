@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BlazingTwistConfigTools.blazingtwist.config.deserialization;
-using BlazingTwistConfigTools.blazingtwist.config.serialization;
+using BlazingTwistConfigTools.config.deserialization;
+using BlazingTwistConfigTools.config.serialization;
 using JetBrains.Annotations;
 using UnityEngine;
 
-namespace BlazingTwistConfigTools.blazingtwist.config {
+namespace BlazingTwistConfigTools.config {
 	[PublicAPI]
 	public static class BTConfigUtils {
 		/// <summary>
@@ -18,15 +18,18 @@ namespace BlazingTwistConfigTools.blazingtwist.config {
 		/// <param name="pathToFile">absolute path to the config file. '/' will be replaced with the DirectorySeparatorChar</param>
 		/// <param name="instance">optional - instance of the existing config</param>
 		/// <param name="verifyAllFieldsSet">if enabled, verifies that all Fields of TConfigType are set by the config</param>
+		/// <param name="keyFormatOption">default format option for serializing keys</param>
+		/// <param name="valueFormatOption">default format option for serializing values</param>
 		/// <typeparam name="TConfigType">type of the config to load</typeparam>
 		/// <returns>instance of the loaded config</returns>
-		public static TConfigType LoadConfigFile<TConfigType>(string pathToFile, [CanBeNull] TConfigType instance, bool verifyAllFieldsSet) {
+		public static TConfigType LoadConfigFile<TConfigType>(string pathToFile, [CanBeNull] TConfigType instance, bool verifyAllFieldsSet,
+				EFormatOption keyFormatOption = EFormatOption.UseDefault, EFormatOption valueFormatOption = EFormatOption.UseDefault) {
 			pathToFile = pathToFile.Replace('/', Path.DirectorySeparatorChar);
 			if (!File.Exists(pathToFile)) {
 				if (instance == null) {
 					instance = (TConfigType)Activator.CreateInstance(typeof(TConfigType));
 				}
-				IEnumerable<string> lines = new ConfigSerializer().Serialize(instance);
+				IEnumerable<string> lines = new ConfigSerializer().Serialize(instance, keyFormatOption, valueFormatOption);
 
 				using (StreamWriter writer = new StreamWriter(pathToFile, false)) {
 					foreach (string line in lines) {

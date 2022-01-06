@@ -1,7 +1,8 @@
-﻿using System.IO;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.IO;
+using BlazingTwistConfigTools.config.deserialization;
 
-namespace BlazingTwistConfigTools.blazingtwist.config.deserialization {
+namespace BlazingTwistConfigTools.config.types {
 	public class ConfigNode {
 		public int LineNumber { get; }
 		public int ObjectDepth { get; }
